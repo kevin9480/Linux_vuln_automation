@@ -124,6 +124,10 @@ Ansible 기반으로 다중 Linux 서버의 보안 취약점을 자동 진단하
 
 <img src="docs/nuclei-scan.png" width="700">
 
+**Nuclei 스캔 결과** — OpenSSH 서비스 탐지 등 취약점 상세 정보를 JSON 형태로 출력
+
+<img src="docs/nuclei-result.png" width="700">
+
 ---
 
 ## 향후 개선 방향
