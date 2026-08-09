@@ -1,0 +1,48 @@
+---
+- name: Selective Remediation
+  hosts: targets
+  gather_facts: yes
+  become: yes
+
+  vars:
+    vuln_code: ""
+
+  tasks:
+
+    # - name: Copy Ubuntu remedy script
+    #   copy:
+    #     src: scripts/remedy/ubuntu_remedy.sh
+    #     dest: /tmp/ubuntu_remedy.sh
+    #     mode: '0755'
+    #   when: ansible_facts["distribution"] == "Ubuntu"
+
+    # - name: Run Ubuntu remedy script
+    #   shell: /bin/bash /tmp/ubuntu_remedy.sh {{ vuln_code }}
+    #   when: ansible_facts["distribution"] == "Ubuntu"
+    #   register: remedy_result
+
+    # Ubuntu
+    - name: Run Ubuntu remedy script
+      script: "{{ playbook_dir }}/scripts/remedy/ubuntu_remedy.sh {{ vuln_code }}"
+      when: "'Ubuntu' in ansible_facts['distribution']"
+      register: remedy_result
+
+    # Rocky Linux 9
+    - name: Run Rocky Linux 9 remedy script
+      script: "{{ playbook_dir }}/scripts/remedy/rocky_remedy_9.sh {{ vuln_code }}"
+      when:
+        - ansible_facts["distribution"] == "Rocky"
+        - ansible_facts["distribution_major_version"] | string == "9"
+      register: remedy_result
+
+    # Rocky Linux 10
+    - name: Run Rocky Linux 10 remedy script
+      script: "{{ playbook_dir }}/scripts/remedy/rocky_remedy_10.sh {{ vuln_code }}"
+      when:
+        - ansible_facts["distribution"] == "Rocky"
+        - ansible_facts["distribution_major_version"] | string == "10"
+      register: remedy_result
+
+    - name: Show remedy result
+      debug:
+        var: remedy_result.stdout

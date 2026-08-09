@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+.env
+src/dashboard_0210/temp_inventory.ini
+src/dashboard_0210/nuclei-templates/
+src/dashboard_0210/report/

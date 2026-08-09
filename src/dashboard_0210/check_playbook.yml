@@ -1,0 +1,68 @@
+---
+- name: Linux Security Diagnosis (KISA-based)
+  hosts: targets
+  gather_facts: yes
+
+  tasks:
+    - name: Ensure reports directory exists locally
+      delegate_to: localhost
+      file:
+        path: "{{ playbook_dir }}/reports"
+        state: directory
+        mode: "0755"
+
+    # Ubuntu
+    - name: Run Diagnosis Script for Ubuntu
+      script: "{{ playbook_dir }}/../OS_Scripts/Debian-family/Ubuntu24.sh"
+      become: yes
+      register: ubuntu_result
+      when: ansible_facts["distribution"] == "Ubuntu"
+      ignore_errors: yes
+
+    # Rocky 9
+    - name: Run Diagnosis Script for Rocky Linux 9
+      script: "{{ playbook_dir }}/../OS_Scripts/RHEL-family/Rocky9.sh"
+      become: yes
+      register: rocky9_result          # 분리
+      when:
+        - ansible_facts["distribution"] == "Rocky"
+        - ansible_facts["distribution_major_version"] | string == "9"
+      ignore_errors: yes
+
+    # Rocky 10
+    - name: Run Diagnosis Script for Rocky Linux 10
+      script: "{{ playbook_dir }}/../OS_Scripts/RHEL-family/Rocky10.sh"
+      become: yes
+      register: rocky10_result         # 분리
+      when:
+        - ansible_facts["distribution"] == "Rocky"
+        - ansible_facts["distribution_major_version"] | string == "10"
+      ignore_errors: yes
+
+    - name: Save Diagnosis Report to Local
+      delegate_to: localhost
+      copy:
+        content: |
+          {% if ubuntu_result.stdout is defined and ubuntu_result.stdout|trim != "" %}
+          {{ ubuntu_result.stdout }}
+          {% elif rocky9_result.stdout is defined and rocky9_result.stdout|trim != "" %}
+          {{ rocky9_result.stdout }}
+          {% elif rocky10_result.stdout is defined and rocky10_result.stdout|trim != "" %}
+          {{ rocky10_result.stdout }}
+          {% endif %}
+
+          {% if (ubuntu_result.stdout is defined and ubuntu_result.stdout|trim != "") or (rocky9_result.stdout is defined and rocky9_result.stdout|trim != "") or (rocky10_result.stdout is defined and rocky10_result.stdout|trim != "") %}
+          {% else %}
+          진단 스크립트 실행 결과가 비어있습니다.
+          {% endif %}
+        dest: "{{ playbook_dir }}/reports/{{ inventory_hostname }}_result.txt"
+
+    - name: Cleanup remote temporary files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/ubuntu_check.sh"
+        - "/tmp/rocky_check_9.sh"
+        - "/tmp/rocky_check_10.sh"
+      ignore_errors: yes
